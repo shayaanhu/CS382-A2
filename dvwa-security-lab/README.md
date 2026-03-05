@@ -40,26 +40,27 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 ## 1. Brute Force
 
 ### 🔴 Low Security
-**Tool/Method:**  
-**Result:**  
-**Screenshot:**  
-**Why it worked:**  
+**Tool/Method:** Manual entry (simulating a dictionary attack).  
+**Result:** Successfully logged in using `admin` / `password`.  
+**Screenshot:** ![Brute Force Low](screenshots/brute-low.png)  
+**Why it worked:** There are no server-side protections. The application processes the request immediately, allowing an attacker to automate thousands of login attempts per second without any lockout or delay.
 
 ---
 
 ### 🟡 Medium Security
-**Tool/Method:**  
-**Result:**  
-**Screenshot:**  
-**Why it was harder:**  
+**Tool/Method:** Manual entry.  
+**Result:** Successful login, but failed attempts resulted in a noticeable delay.  
+**Screenshot:** ![Brute Force Medium](screenshots/brute-medium.png)  
+**Why it was harder:** The server-side script includes a `sleep(2)` function call whenever a login attempt fails. This adds a 2-second delay to every incorrect guess.  
+**Why it still worked:** While the delay slows down a brute force attack significantly, it does not actually stop it. An attacker with enough time can still eventually guess the password.
 
 ---
 
 ### 🟢 High Security
-**Tool/Method:**  
-**Result:**  
-**Screenshot:**  
-**Why it failed / mitigation used:**  
+**Tool/Method:** Manual entry.  
+**Result:** Successful login, but requires a unique CSRF token per attempt.  
+**Screenshot:** ![Brute Force High](screenshots/brute-high.png)  
+**Why it failed / mitigation used:** The High security level implements a CSRF token (anti-automation token) and a random `sleep()` delay. The token must be scraped from the login page and submitted with the credentials, which breaks simple automated brute-force scripts. Additionally, the random delay makes it harder for attackers to predict response times.
 
 ---
 
@@ -203,25 +204,26 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 ```sql
 1' OR '1'='1
 ```
-**Result:**  
-**Screenshot:**  
-**Why it worked:**  
+**Result:** Successfully dumped the entire database of users (Usernames and Passwords).  
+**Screenshot:** ![SQL Injection Low](screenshots/sql-low.png)  
+**Why it worked:** The application directly concatenates user input into the SQL query without any sanitization or use of prepared statements. The `'` character closes the original string, and `OR '1'='1` makes the WHERE clause always true.
 
 ---
 
 ### 🟡 Medium Security
-**Payload:**  
-**Result:**  
-**Screenshot:**  
-**Why it was harder:**  
+**Payload:** `1 OR 1=1` (sent via edited HTML value)  
+**Result:** Successfully dumped the database after bypassing the dropdown menu.  
+**Screenshot:** ![SQL Injection Medium](screenshots/sql-medium.png)  
+**Why it was harder:** Direct text input was blocked by a dropdown menu, and the PHP code used `mysql_real_escape_string()` to escape single quotes.  
+**Why it still worked:** I used "Inspect Element" to modify the value of the dropdown option to a SQL payload. Since the developer forgot to put quotes around the `$id` variable in the SQL query (e.g., `WHERE user_id = $id`), the `mysql_real_escape_string()` function was useless against numeric-based injection.
 
 ---
 
 ### 🟢 High Security
-**Payload:**  
-**Result:**  
-**Screenshot:**  
-**Why it failed / mitigation used:**  
+**Payload:** `1' OR '1'='1` (entered in the popup window)  
+**Result:** Successfully dumped the database from a separate input window.  
+**Screenshot:** ![SQL Injection High](screenshots/sql-high.png)  
+**Why it failed / mitigation used:** The "High" level simply moved the input form to a separate popup page. This stops some automated scrapers but doesn't fix the underlying SQL injection vulnerability. The backend code remains vulnerable as it still doesn't use prepared statements.
 
 ---
 
