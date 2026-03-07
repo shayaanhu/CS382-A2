@@ -103,19 +103,19 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 ---
 
 ### 🟡 Medium Security
-**Method:** The `Referer` header check — bypassed using a crafted HTML form pointed at DVWA.  
-**Result:** Password change is blocked when using the raw URL (Referer doesn't match), but can be bypassed.  
+**Method:** Bypassing `Referer` check using Chrome DevTools `fetch` modification.
+**Result:** Password change is successful after modifying the Referer header to include "localhost".
 **Screenshot:** ![CSRF Medium](screenshots/csrf_med.png)  
 **Why it was harder:** The server now checks the HTTP `Referer` header to ensure the request originated from the same site.  
-**Why it still worked:** The `Referer` check only verifies that the string `localhost` appears anywhere in the Referer URL. An attacker can host a malicious page on a site like `http://localhost.evil.com/` and still bypass this check.
+**Why it still worked:** The `Referer` check only verifies that the string `localhost` appears anywhere in the Referer URL. By using "Copy as fetch" in the Network tab, pasting it into the Console, and changing the `"referrer"` value to a fake URL containing "localhost" (e.g., `http://evil.com/localhost.html`), the server accepts the forged request.
 
 ---
 
 ### 🟢 High Security
-**Method:** CSRF token required per request.  
-**Result:** Attack is blocked — each request requires a unique, unpredictable CSRF token.  
+**Method:** Required predictable CSRF token. Attempted direct URL injection.
+**Result:** Attack is blocked — each request requires a unique, unpredictable CSRF token tied to the user's session.
 **Screenshot:** ![CSRF High](screenshots/csrf_high.png)  
-**Why it failed / mitigation used:** High security generates a unique `user_token` for every page load that is tied to the session. Without scraping the page first to obtain this token, any forged request will be rejected by the server.
+**Why it failed / mitigation used:** High security generates a unique `user_token` for every page load that is tied to the session. Without scraping the page first to obtain this embedded hidden token, any forged request will be rejected by the server as invalid.
 
 ---
 
