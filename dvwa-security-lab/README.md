@@ -27,6 +27,11 @@ Environment setup commands are in [`commands.md`](commands.md).
 13. [CSP Bypass](#13-csp-bypass)
 14. [JavaScript](#14-javascript)
 
+## Additional Sections
+
+15. [Docker Inspection](#docker-inspection)
+16. [Security Analysis](#security-analysis)
+
 ---
 
 ## 1. Brute Force
@@ -470,56 +475,178 @@ f.submit();
 ```bash
 docker ps
 ```
-**Output:**  
+**Output:**
+```text
+CONTAINER ID   IMAGE                  COMMAND      CREATED             STATUS          PORTS                                     NAMES
+9f029a03bb5a   vulnerables/web-dvwa   "/main.sh"   About an hour ago   Up 44 minutes   0.0.0.0:8080->80/tcp, [::]:8080->80/tcp   dvwa
+```
 
 ```bash
 docker inspect dvwa
 ```
-**Output (key fields):**  
+**Output:**
+```json
+[
+    {
+        "Id": "9f029a03bb5ada048d13e58cbee09c223f928af850a539acea18ab86915a1b00",
+        "Created": "2026-03-07T17:26:24.248477238Z",
+        "Path": "/main.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 504,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-03-07T17:58:56.268386943Z",
+            "FinishedAt": "2026-03-07T17:55:18.434727061Z"
+        },
+        "Image": "sha256:dae203fe11646a86937bf04db0079adef295f426da68a92b40e3b181f337daa7",
+        "Name": "/dvwa",
+        "Driver": "overlayfs",
+        "HostConfig": {
+            "NetworkMode": "bridge",
+            "PortBindings": {
+                "80/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "8080"
+                    }
+                ]
+            }
+        },
+        "Config": {
+            "Image": "vulnerables/web-dvwa",
+            "Entrypoint": [
+                "/main.sh"
+            ]
+        },
+        "NetworkSettings": {
+            "Ports": {
+                "80/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "8080"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "8080"
+                    }
+                ]
+            },
+            "Gateway": "172.17.0.1",
+            "IPAddress": "172.17.0.2"
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "digest": "sha256:dae203fe11646a86937bf04db0079adef295f426da68a92b40e3b181f337daa7",
+            "size": 1997,
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux"
+            }
+        }
+    }
+]
+```
 
 ```bash
 docker logs dvwa
 ```
-**Output:**  
+**Output (from my terminal, shortened for readability):**
+```text
+[+] Starting mysql...
+Starting MariaDB database server: mysqld.
+[+] Starting apache
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.17.0.2. Set the 'ServerName' directive globally to suppress this message
+Starting Apache httpd web server: apache2.
+==> /var/log/apache2/access.log <==
+
+==> /var/log/apache2/error.log <==
+[Sat Mar 07 17:26:26.622102 2026] [mpm_prefork:notice] [pid 288] AH00163: Apache/2.4.25 (Debian) configured -- resuming normal operations
+[Sat Mar 07 17:26:26.622188 2026] [core:notice] [pid 288] AH00094: Command line: '/usr/sbin/apache2'
+
+==> /var/log/apache2/other_vhosts_access.log <==
+
+==> /var/log/apache2/access.log <==
+172.17.0.1 - - [07/Mar/2026:17:27:09 +0000] "GET /setup.php HTTP/1.1" 200 2003 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:17:27:10 +0000] "GET /setup.php HTTP/1.1" 200 2003 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:17:27:11 +0000] "POST /setup.php HTTP/1.1" 302 337 "http://localhost:8080/setup.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:17:27:11 +0000] "GET /setup.php HTTP/1.1" 200 2175 "http://localhost:8080/setup.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:17:27:13 +0000] "GET /login.php HTTP/1.1" 200 1049 "http://localhost:8080/setup.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:17:27:17 +0000] "POST /login.php HTTP/1.1" 302 336 "http://localhost:8080/login.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:17:27:17 +0000] "GET /index.php HTTP/1.1" 200 3036 "http://localhost:8080/login.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+...
+172.17.0.1 - - [07/Mar/2026:18:20:19 +0000] "GET /vulnerabilities/javascript/ HTTP/1.1" 200 1815 "http://localhost:8080/security.php" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:18:20:28 +0000] "POST /vulnerabilities/javascript/ HTTP/1.1" 200 1838 "http://localhost:8080/vulnerabilities/javascript/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:18:20:29 +0000] "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 539 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+172.17.0.1 - - [07/Mar/2026:18:21:20 +0000] "-" 408 0 "-" "-"
+172.17.0.1 - - [07/Mar/2026:18:26:45 +0000] "-" 408 0 "-" "-"
+```
 
 ```bash
 docker exec -it dvwa /bin/bash
 ls /var/www/html
 ```
-**Output:**  
+**Output:**
+```text
+root@9f029a03bb5a:/# ls /var/www/html
+CHANGELOG.md  about.php  dvwa         hackable     instructions.php  php.ini      security.php
+COPYING.txt   config     external     ids_log.php  login.php         phpinfo.php  setup.php
+README.md     docs       favicon.ico  index.php    logout.php        robots.txt   vulnerabilities
+root@9f029a03bb5a:/#
+```
+
+**Additional verification (backend stack):**
+```text
+PHP 7.0.30-0+deb9u1
+Apache/2.4.25 (Debian)
+```
 
 **Analysis:**
-- **Application files location:**  
-- **Backend technology:**  
-- **How Docker isolates the environment:**  
+- **Application files location:** The DVWA web root is `/var/www/html`, and vulnerable modules are under `/var/www/html/vulnerabilities`.
+- **Backend technology:** DVWA runs on PHP + Apache HTTP Server in a Debian-based Linux container.
+- **How Docker isolates the environment:** The app runs in a separate container namespace with its own filesystem and internal IP (`172.17.0.2`) on Docker bridge network, while only port `80` is exposed to host port `8080`.
 
 ---
 
 ## Security Analysis
 
-**Q1. Why does SQL Injection succeed at Low security?**  
+**Q1. Why does SQL Injection succeed at Low security?**
+Low security directly concatenates user input into SQL queries with no parameterization. Attackers can close the intended expression and inject boolean logic (`OR '1'='1`) to alter query behavior.
 
-**Q2. What control prevents it at High?**  
+**Q2. What control prevents it at High?**
+In this DVWA lab, SQL Injection can still be exploited at High, so the control is incomplete. Real prevention is server-side prepared statements (parameterized queries) with strict input typing and least-privilege DB accounts.
 
-**Q3. Does HTTPS prevent these attacks? Why or why not?**  
+**Q3. Does HTTPS prevent these attacks? Why or why not?**
+No. HTTPS protects data in transit (confidentiality/integrity between client and server), but it does not validate input or fix server-side logic flaws like SQLi, XSS, command injection, or file inclusion.
 
-**Q4. What risks exist if this app is deployed publicly?**  
+**Q4. What risks exist if this app is deployed publicly?**
+- Account takeover and session hijacking
+- Database disclosure and credential leaks
+- Remote command execution and server compromise
+- Persistent client-side compromise through stored/reflected XSS
+- Pivoting to internal systems after foothold
 
 **Q5. OWASP Top 10 Mapping:**
 
-| Vulnerability | OWASP Top 10 Category |
-|---|---|
-| Brute Force | A07:2021 – Identification & Auth Failures |
-| Command Injection | A03:2021 – Injection |
-| CSRF | A01:2021 – Broken Access Control |
-| File Inclusion | A05:2021 – Security Misconfiguration |
-| File Upload | A04:2021 – Insecure Design |
-| Insecure CAPTCHA | A07:2021 – Identification & Auth Failures |
-| SQL Injection | A03:2021 – Injection |
-| SQL Injection (Blind) | A03:2021 – Injection |
-| Weak Session IDs | A07:2021 – Identification & Auth Failures |
-| XSS (DOM / Reflected / Stored) | A03:2021 – Injection |
-| JavaScript | A05:2021 – Security Misconfiguration |
-| CSP Bypass | A05:2021 – Security Misconfiguration |
+| Vulnerability | OWASP Top 10 Category | Rationale |
+|---|---|---|
+| Brute Force | A07:2021 – Identification and Authentication Failures | Weak login protection and anti-automation controls |
+| Command Injection | A03:2021 – Injection | Unsanitized input reaches OS command execution |
+| CSRF | A01:2021 – Broken Access Control | Forged state-changing requests accepted with victim session |
+| File Inclusion | A05:2021 – Security Misconfiguration | Unsafe file handling and traversal controls |
+| File Upload | A05:2021 – Security Misconfiguration | Insecure validation and executable upload exposure |
+| Insecure CAPTCHA | A07:2021 – Identification and Authentication Failures | CAPTCHA/auth bypass due weak server checks |
+| SQL Injection | A03:2021 – Injection | SQL query manipulation via untrusted input |
+| SQL Injection (Blind) | A03:2021 – Injection | Boolean/time-based inference from injected conditions |
+| Weak Session IDs | A07:2021 – Identification and Authentication Failures | Predictable session token generation |
+| XSS (DOM / Reflected / Stored) | A03:2021 – Injection | Script execution through untrusted browser-side/response input |
+| JavaScript | A04:2021 – Insecure Design | Security logic trusted on client side and bypassed |
+| CSP Bypass | A05:2021 – Security Misconfiguration | Policy/nonce/jsonp weaknesses allow script execution |
 
 ---
