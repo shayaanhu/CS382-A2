@@ -410,26 +410,46 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 ## 14. CSP Bypass
 
 ### 🔴 Low Security
-**Method:**  
-**Result:**  
+**Payload:** `source/jsonp.php?callback=alert`
+**Result:** Successfully triggered an alert box (showing `[object Object]`).
 **Screenshot:** ![CSP Bypass Low](screenshots/csp_low.png)  
-**Why it worked:**  
+**Why it worked:** The CSP header whitelists `'self'`. The application hosts a JSONP endpoint (`source/jsonp.php`) that reflects the `callback` parameter. By using `alert` as the callback, the browser executes `alert({"answer":"15"})`, proving arbitrary code execution.
+**Failure Analysis (Previous Attempts):**
+- **External Whitelists (Pastebin):** Attempts to use whitelisted domains like `pastebin.com` failed. Modern browsers often block these "untrusted" scripting sources due to security filters or network connectivity issues within the VM environment.
+- **Complex Payloads:** Initial payloads using quotes or comments (e.g., `alert('XSS')`) failed with syntax errors in the console because the browser's URL-decoding/parsing of the injected string into a script tag's `src` attribute was inconsistent. Switching to a direct function name like `alert` solved this.
 
 ---
 
 ### 🟡 Medium Security
-**Method:**  
-**Result:**  
+**Method:** Exploiting a static, predictable nonce.
+**Payload:** `<script nonce="TmV2ZXIgZ29pbmcgdG8gZ2l2ZSB5b3UgdXA=">alert('Medium_CSP_Bypass')</script>`
+**Result:** Successfully executed an inline script by providing the correct nonce.
 **Screenshot:** ![CSP Bypass Medium](screenshots/csp_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The CSP policy uses a nonce (`nonce-...`), which should prevent the execution of arbitrary inline scripts. 
+**Why it still worked:** THE nonce is hardcoded in the source code ("Never going to give you up" in base64). Since the nonce is not randomly generated for each request, an attacker can simply include it in their own script tags to satisfy the CSP requirement.
 
 ---
 
 ### 🟢 High Security
-**Method:**  
-**Result:**  
+**Payload (Browser Console):**
+```javascript
+var f = document.createElement('form');
+f.method = 'POST';
+f.action = window.location.href;
+var i = document.createElement('input');
+i.name = 'include';
+i.value = '<script src="source/jsonp.php?callback=alert"></script>';
+f.appendChild(i);
+document.body.appendChild(f);
+f.submit();
+```
+**Result:** Successfully executed code by leveraging the `jsonp.php` file on the same origin via manual form injection.
 **Screenshot:** ![CSP Bypass High](screenshots/csp_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** The CSP policy is very strict, only allowing scripts from `'self'`. Furthermore, the application UI removes the input field, implying no direct injection is possible.
+**Why it still worked:** 
+- **Hidden Vulnerability:** Despite the missing UI, the backend PHP code (`high.php`) still processes the `POST['include']` parameter. 
+- **Console Injection:** By using the browser console to inject and submit a hidden form, we can force the payload into the page.
+- **Trusting 'self':** Since the injected `<script>` tag points to a local file (`source/jsonp.php`), it satisfies the strict `'self'` policy. Using `alert` as the callback triggers the execution.
 
 ---
 
