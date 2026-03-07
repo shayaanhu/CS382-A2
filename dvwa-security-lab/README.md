@@ -269,26 +269,28 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 ## 9. Weak Session IDs
 
 ### 🔴 Low Security
-**Method:**  
-**Result:**  
-**Screenshot:** ![Weak Session IDs Low](screenshots/session_low.png)  
-**Why it worked:**  
+**Method:** Observing incremental session ID values.
+**Result:** Successfully predicted the next session ID by observing the consecutive incrementing integers in the `dvwaSession` cookie.
+**Screenshot:** ![Weak Session IDs Low](screenshots/wsi_low.png)  
+**Why it worked:** The server generates the session ID by simply incrementing an integer counter stored in the session (`last_session_id++`). An attacker can easily guess the session ID of the next user to log in.
 
 ---
 
 ### 🟡 Medium Security
-**Method:**  
-**Result:**  
-**Screenshot:** ![Weak Session IDs Medium](screenshots/session_med.png)  
-**Why it was harder:**  
+**Method:** Identifying time-based session IDs.
+**Result:** Predicted session IDs by converting the cookie value to a Unix timestamp.
+**Screenshot:** ![Weak Session IDs Medium](screenshots/wsi_med.png)  
+**Why it was harder:** The session ID is no longer a simple counter, making it appear randomized at first glance.  
+**Why it still worked:** The server uses the PHP `time()` function to generate the ID. Since timestamps are sequential and globally synchronized, an attacker can pinpoint a user's session ID if they know the approximate time of login.
 
 ---
 
 ### 🟢 High Security
-**Method:**  
-**Result:**  
-**Screenshot:** ![Weak Session IDs High](screenshots/session_high.png)  
-**Why it failed / mitigation used:**  
+**Method:** Reversing MD5-hashed incremental IDs.
+**Result:** Successfully predicted the next hashed session ID by hashing the next expected integer in the sequence.
+**Screenshot:** ![Weak Session IDs High](screenshots/wsi_high.png)  
+**Why it failed / mitigation used:** The session ID is an MD5 hash, which hides the underlying sequence from casual observation.  
+**Why it still worked:** The underlying value is still just an incremental counter (`md5(count++)`). Hashing a predictable value does not make it secure; it only adds a thin layer of obfuscation that can be trivially bypassed.
 
 ---
 
