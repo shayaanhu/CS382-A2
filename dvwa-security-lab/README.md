@@ -241,26 +241,28 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 ## 8. SQL Injection (Blind)
 
 ### 🔴 Low Security
-**Payload:**  
-**Result:**  
+**Payload:** `1' AND 1=1 #` (True) vs `1' AND 1=2 #` (False)
+**Result:** Successfully confirmed the existence of User ID 1 by observing the change in response message.
 **Screenshot:** ![SQL Injection Blind Low](screenshots/sqli_blind_low.png)  
-**Why it worked:**  
+**Why it worked:** The input is not sanitized or parameterized. By injecting a boolean condition (`AND 1=1`), we can determine if the original query returned a row. If the page says "User ID exists", the condition was true. If it says "User ID is MISSING", the condition was false.
 
 ---
 
 ### 🟡 Medium Security
-**Payload:**  
-**Result:**  
+**Payload:** `1 AND 1=1` (True) vs `1 AND 1=2` (False)
+**Result:** Bypassed `mysqli_real_escape_string` by using numeric-based injection.
 **Screenshot:** ![SQL Injection Blind Medium](screenshots/sqli_blind_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The application uses `mysqli_real_escape_string()` to escape quotes and uses a dropdown menu for input.  
+**Why it still worked:** Since the SQL query does not wrap the ID in quotes (`WHERE user_id = $id`), escaping quotes has no effect. By intercepting the POST request and changing the ID to a boolean expression, we can infer database data.
 
 ---
 
 ### 🟢 High Security
-**Payload:**  
-**Result:**  
+**Payload:** `1' AND 1=1 #` (True) vs `1' AND 1=2 #` (False)
+**Result:** Successfully exploited the vulnerability by modifying the `id` cookie.
 **Screenshot:** ![SQL Injection Blind High](screenshots/sqli_blind_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** The application uses a separate page to set a cookie and includes a `sleep()` function to slow down brute-force/automated attacks.  
+**Why it still worked:** The security flaw is the same as the Low level (string concatenation in the query), just with a different input vector (cookies). By manually setting the cookie value to our payload, we bypass the intended input method.
 
 ---
 
