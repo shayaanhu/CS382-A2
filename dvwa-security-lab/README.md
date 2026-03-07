@@ -356,29 +356,28 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 ## 12. XSS – Stored
 
 ### 🔴 Low Security
-**Payload:**
-```html
-<script>alert('Stored XSS')</script>
-```
-**Result:**  
+**Payload:** `<script>alert('Stored XSS')</script>` (in the Message field)
+**Result:** Successfully stored the script; it triggers an alert every time the page is loaded.
 **Screenshot:** ![XSS Stored Low](screenshots/xss_stored_low.png)  
-**Why it worked:**  
+**Why it worked:** The server accepts input from the guestbook form and saves it directly to the database without any tags being stripped or encoded. When the page renders the entries, the browser executes the script.
 
 ---
 
 ### 🟡 Medium Security
-**Payload:**  
-**Result:**  
+**Payload:** `<SCRIPT>alert('Stored XSS')</SCRIPT>` (in the Name field)
+**Result:** Bypassed the message-field sanitization by targeting the "Name" field with mixed-case tags.
 **Screenshot:** ![XSS Stored Medium](screenshots/xss_stored_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The "Message" field uses `strip_tags()`, making it very difficult to inject code. The "Name" field has a `maxlength` limit of 10 characters in the HTML.
+**Why it still worked:** I used DevTools to increase the `maxlength` of the "Name" input field. The backend only uses a case-sensitive `str_replace('<script>', ...)` on the name, which I bypassed by using uppercase tags.
 
 ---
 
 ### 🟢 High Security
-**Payload:**  
-**Result:**  
+**Payload:** `<img src=x onerror=alert('Stored XSS')>` (in the Name field)
+**Result:** Successfully bypassed the robust regex filter by using an `img` tag event handler in the "Name" field.
 **Screenshot:** ![XSS Stored High](screenshots/xss_stored_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** The application uses a robust regex to block script tags in the "Name" field and `strip_tags()` in the "Message" field.
+**Why it still worked:** Similar to the Medium level, the protection focuses on a blacklist. By bypassing the HTML length limit on the "Name" field and using an alternative tag like `<img>` with an `onerror` handler, the security measures were circumvented.
 
 ---
 
