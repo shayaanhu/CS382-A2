@@ -31,6 +31,7 @@ Environment setup commands are in [`commands.md`](commands.md).
 
 15. [Docker Inspection](#docker-inspection)
 16. [Security Analysis](#security-analysis)
+17. [Bonus: Nginx Reverse Proxy + HTTPS](#17-bonus-nginx-reverse-proxy--https)
 
 ---
 
@@ -648,5 +649,90 @@ No. HTTPS protects data in transit (confidentiality/integrity between client and
 | XSS (DOM / Reflected / Stored) | A03:2021 – Injection | Script execution through untrusted browser-side/response input |
 | JavaScript | A04:2021 – Insecure Design | Security logic trusted on client side and bypassed |
 | CSP Bypass | A05:2021 – Security Misconfiguration | Policy/nonce/jsonp weaknesses allow script execution |
+
+---
+
+## 17. Bonus: Nginx Reverse Proxy + HTTPS
+
+### Objective
+- Deploy DVWA behind an Nginx reverse proxy
+- Enable HTTPS with a self-signed certificate
+- Compare HTTP vs HTTPS traffic behavior
+
+### Implementation
+
+**Bonus stack files added:**
+- `bonus/docker-compose.yml`
+- `bonus/nginx/default.conf`
+- `bonus/certs/` (local generated certificate/key)
+
+**Container design:**
+- `dvwa-backend` (DVWA, internal network only, no host port exposed)
+- `dvwa-nginx-proxy` (Nginx reverse proxy)
+  - HTTP: `http://localhost:8081`
+  - HTTPS: `https://localhost:8443`
+
+### Self-Signed Certificate
+
+I generated a self-signed cert locally (OpenSSL via Docker container):
+
+```bash
+docker run --rm -v "${PWD}/bonus/certs:/out" alpine:3.20 sh -c "apk add --no-cache openssl >/dev/null && openssl req -x509 -nodes -newkey rsa:2048 -keyout /out/dvwa.key -out /out/dvwa.crt -days 365 -subj '/CN=localhost'"
+```
+
+### Deployment Commands
+
+```bash
+docker compose -f bonus/docker-compose.yml up -d
+docker compose -f bonus/docker-compose.yml ps
+```
+
+**Output:**
+
+```text
+NAME               IMAGE                  COMMAND                  SERVICE        CREATED         STATUS         PORTS
+dvwa-backend       vulnerables/web-dvwa   "/main.sh"               dvwa-backend   7 seconds ago   Up 6 seconds   80/tcp
+dvwa-nginx-proxy   nginx:1.27-alpine      "/docker-entrypoint.…"   nginx-proxy    7 seconds ago   Up 6 seconds   0.0.0.0:8081->80/tcp, [::]:8081->80/tcp, 0.0.0.0:8443->443/tcp, [::]:8443->443/tcp
+```
+
+### Verification
+
+```bash
+curl -I http://localhost:8081/login.php
+curl -k -I https://localhost:8443/login.php
+```
+
+**Output:**
+
+```text
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+...
+```
+
+```text
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+...
+```
+
+### HTTP vs HTTPS Traffic Difference
+
+Using verbose client requests:
+
+```bash
+curl -v http://localhost:8081/login.php -o NUL
+curl -vk https://localhost:8443/login.php -o NUL
+```
+
+Observed behavior:
+- HTTP request directly sends application data without TLS negotiation.
+- HTTPS request shows TLS negotiation (`schannel: SSL/TLS connection renegotiated`) before HTTP response.
+- HTTPS required `-k` because the certificate is self-signed and not trusted by default.
+
+Security difference:
+- **HTTP:** Traffic can be read/modified in transit by network attackers (no encryption/integrity).
+- **HTTPS:** Traffic is encrypted and integrity-protected in transit; credentials/cookies are protected from passive interception.
+- **Important:** HTTPS does **not** remove server-side vulnerabilities (SQLi, XSS, command injection, etc.); it only secures transport.
 
 ---

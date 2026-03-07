@@ -1,0 +1,26 @@
+services:
+  dvwa-backend:
+    image: vulnerables/web-dvwa
+    container_name: dvwa-backend
+    restart: unless-stopped
+    networks:
+      - dvwa_net
+
+  nginx-proxy:
+    image: nginx:1.27-alpine
+    container_name: dvwa-nginx-proxy
+    depends_on:
+      - dvwa-backend
+    ports:
+      - "8081:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+    networks:
+      - dvwa_net
+
+networks:
+  dvwa_net:
+    driver: bridge
