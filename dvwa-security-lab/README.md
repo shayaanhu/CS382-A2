@@ -314,42 +314,42 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 ---
 
 ### 🟢 High Security
-**Payload:** `?default=English#</option></select><script>alert(1)</script>`
-**Result:** **Attack Blocked / Failed.**
+**Payload:** `?default=English#</option></select><img src=x onerror=alert('High_XSS')>`
+**Result:** **Success (Successfully bypassed after reload).**
 **Screenshot:** ![XSS DOM High](screenshots/xss_dom_high.png)  
-**Why it failed / mitigation used:** 
-1. **Server-Side Whitelist:** The PHP code uses a strict `switch` statement that only allows four specific language names ("English", "French", etc.). Any other value causes an immediate redirect, preventing the payload from reaching the page via a standard query parameter.
-2. **Client-Side Confinement:** Even when attempting to use a "Fragment Identifier" (`#`) to sneak the payload past the server, the client-side JavaScript injects the value directly into the `value` attribute of an `<option>` tag. Modern browsers often treat this as a string rather than executable code, and the strict tag confinement inside the `<select>` block prevents the breakout from triggering an execution context like an alert.
-3. **Browser Protections:** Modern browser XSS filters and sanitization during `document.write` for sensitive tags like `<script>` further mitigate the risk.
+**Why it failed / mitigation used:** The server uses a strict whitelist (`switch` statement) that only allows certain language names. Any value other than the allowed ones in the `default` parameter results in a redirect.
+**Why it still worked:** 
+1. **Fragment Identifier (#) Bypass:** By putting the payload after the `#`, it is not sent to the server. The PHP whitelist only sees `default=English` and accepts it.
+2. **Tag Breakout:** The client-side JavaScript reads the whole URL and injects the fragment into the DOM. By using `</option></select>`, we "break out" of the HTML tags that would otherwise prevent script execution.
+3. **Trigger:** The browser executes the injected tag (like an `img` with `onerror`) when the page is rendered or reloaded, triggering the alert box.
 
 ---
 
 ## 11. XSS – Reflected
 
 ### 🔴 Low Security
-**Payload:**
-```html
-<script>alert('XSS')</script>
-```
-**Result:**  
+**Payload:** `<script>alert('XSS')</script>`
+**Result:** Successfully executed the script via the URL parameter.
 **Screenshot:** ![XSS Reflected Low](screenshots/xss_reflected_low.png)  
-**Why it worked:**  
+**Why it worked:** The server-side script takes the `name` parameter from the GET request and echoes it directly into the HTML response inside `<pre>` tags without any sanitization or encoding.
 
 ---
 
 ### 🟡 Medium Security
-**Payload:**  
-**Result:**  
+**Payload:** `<sc<script>ript>alert('XSS')</script>`
+**Result:** Bypassed the case-sensitive and non-recursive `str_replace` filter.
 **Screenshot:** ![XSS Reflected Medium](screenshots/xss_reflected_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The application uses `str_replace( '<script>', '', ... )` to remove potential script tags.
+**Why it still worked:** The filter only looks for the literal string `<script>` in lowercase and is not recursive. By nesting the tag or using mixed case (e.g., `<SCRIPT>`), the filter fails to remove the entire malicious payload.
 
 ---
 
 ### 🟢 High Security
-**Payload:**  
-**Result:**  
+**Payload:** `<img src=x onerror=alert('XSS')>`
+**Result:** Bypassed the regex-based script tag filter by using an alternative HTML tag.
 **Screenshot:** ![XSS Reflected High](screenshots/xss_reflected_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** The application uses a more robust regular expression `preg_replace()` that case-insensitively blocks any string following the pattern of a script tag.
+**Why it still worked:** The focus of the protection is solely on the `<script>` tag. By using different HTML elements (like `<img>`, `<body>`, or `<a>`) combined with JavaScript event handlers (like `onerror`, `onload`, or `onclick`), the blacklist is effectively bypassed.
 
 ---
 
