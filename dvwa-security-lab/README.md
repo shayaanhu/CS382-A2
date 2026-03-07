@@ -158,46 +158,53 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 ---
 
 ### 🟡 Medium Security
-**Method:** MIME-type bypass by changing `Content-Type` to `image/jpeg` in the request.
+**Method:** MIME-type bypass by changing `Content-Type` to `image/jpeg` using a browser `fetch` command.
 **Result:** Successfully uploaded the PHP shell by tricking the server into thinking it was an image.
 **Screenshot:** ![File Upload Medium](screenshots/file_upload_med.png)  
-**Why it was harder:** The application checks the `Content-Type` header sent by the browser to ensure it matches an allowed image type (e.g., image/jpeg or image/png).
-**Why it still worked:** Browser headers are entirely under the control of the user. By intercepting the request and modifying the MIME type, we bypass this client-side check.
+**Why it was harder:** The application checks the `Content-Type` header sent by the browser to ensure it matches an allowed image type (e.g., `image/jpeg` or `image/png`).
+**Why it still worked:** Browser headers are under the user's control. By using "Copy as fetch" in the Network tab and changing the payload's `Content-Type` to `image/jpeg` in the Console, the server-side validation was bypassed.
 
 ---
 
 ### 🟢 High Security
-**Method:** File header bypass + Command Injection / File Inclusion to execute.
-**Result:** Blocked unless combined with other vulnerabilities.
+**Method:** PNG Magic Bytes bypass + File Inclusion chaining.
+**Result:** Successfully uploaded a PHP shell hidden inside a valid PNG image and executed it via LFI.
 **Screenshot:** ![File Upload High](screenshots/file_upload_high.png)  
-**Why it failed / mitigation used:** The server uses `getimagesize()` to check the actual file content, not just the extension or header. It effectively verifies that the file is a real image.
-**Why it still worked:** An attacker can append PHP code to a real image file. While it passes the image check, the PHP code can be executed if the attacker finds a way (like File Inclusion) to force the server to parse the image as PHP.
+**Why it failed / mitigation used:** The server uses `getimagesize()` to verify the file is a real image and only allows `.jpg`, `.jpeg`, or `.png` extensions.
+**Why it still worked:** I used PowerShell to create a file containing valid PNG magic bytes followed by PHP code:
+```powershell
+$bytes = [System.Convert]::FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="); [System.IO.File]::WriteAllBytes("shell.png", $bytes); Add-Content "shell.png" '<?php phpinfo(); ?>'
+```
+The server accepted `shell.png` as a valid image. I then executed the code by chaining it with the File Inclusion vulnerability: 
+`?page=../../../../hackable/uploads/shell.png`
 
 ---
 
 ## 6. Insecure CAPTCHA
 
 ### 🔴 Low Security
-**Method:**  
-**Result:**  
+**Method:** Bypassing Step 1 by sending the Step 2 POST request directly.
+**Result:** Successfully changed the password without ever solving the CAPTCHA.
 **Screenshot:** ![Insecure CAPTCHA Low](screenshots/captcha_low.png)  
-**Why it worked:**  
+**Why it worked:** The application uses a multi-step process. Step 1 shows the CAPTCHA, and Step 2 changes the password. The server-side script for Step 2 (`low.php`) blindly trusts the `step=2` parameter in the POST request without verifying if the user actually completed Step 1.
 
 ---
 
 ### 🟡 Medium Security
-**Method:**  
-**Result:**  
+**Method:** Forging the `passed_captcha` parameter in the POST request.
+**Result:** Bypassed the CAPTCHA verification by adding `passed_captcha=true` to the request body.
 **Screenshot:** ![Insecure CAPTCHA Medium](screenshots/captcha_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The application now checks for a specific parameter (`passed_captcha`) to decide whether to permit the password change.
+**Why it still worked:** This check is flawed because the parameter is sent by the client. By using Intercept (Burp Suite) or DevTools to add `&passed_captcha=true` to the Step 2 request, the server is tricked into thinking the CAPTCHA was solved.
 
 ---
 
 ### 🟢 High Security
-**Method:**  
-**Result:**  
+**Method:** Combined Parameter and User-Agent spoofing.
+**Result:** Successfully changed the password by emulating the internal reCAPTCHA verification response.
 **Screenshot:** ![Insecure CAPTCHA High](screenshots/captcha_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** The High security level attempts to verify the CAPTCHA response but includes a hardcoded "backdoor" for testing or legacy reasons.
+**Why it still worked:** By setting the `g-recaptcha-response` parameter to `hidd3n_valu3` and the `User-Agent` header to `reCAPTCHA`, the server-side logic skips the real Google verification and permits the password change. This requires intercepting the request with a tool like Burp Suite since browsers restrict changing the User-Agent via script.
 
 ---
 
