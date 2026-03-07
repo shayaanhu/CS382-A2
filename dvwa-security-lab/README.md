@@ -130,11 +130,11 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 ---
 
 ### 🟡 Medium Security
-**Payload:** `?page=..././..././..././etc/passwd`
-**Result:** Successfully bypassed the `../` filter to read `/etc/passwd`.
+**Payload:** `?page=..././..././..././..././..././..././etc/passwd`
+**Result:** Successfully bypassed the `../` filter after 6 directory jumps to read `/etc/passwd`.
 **Screenshot:** ![File Inclusion Medium](screenshots/file_inclusion_med.png)  
 **Why it was harder:** The developer implemented a filter to remove `../` and `..\` sequences to prevent directory traversal.
-**Why it still worked:** The replacement only happens once. By inputting `..././`, the filter removes the inner `../`, leaving behind a valid `../` sequence that the server then processes.
+**Why it still worked:** The replacement only happens once per match. By inputting `..././`, the filter removes the inner `../`, leaving behind a valid `../` sequence. By doing this 6 times, we successfully traverse back to the root directory from the deep application folder.
 
 ---
 
@@ -150,26 +150,28 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 ## 5. File Upload
 
 ### 🔴 Low Security
-**Method:**  
-**Result:**  
+**Method:** Uploaded a simple PHP web shell (`shell.php`).
+**Result:** File was uploaded successfully, and server-side execution was achieved by visiting the uploaded file path.
 **Screenshot:** ![File Upload Low](screenshots/file_upload_low.png)  
-**Why it worked:**  
+**Why it worked:** There are no server-side checks on the file type or extension. The application simply moves the uploaded file to a public directory, allowing any file (including malicious script) to be executed.
 
 ---
 
 ### 🟡 Medium Security
-**Method:**  
-**Result:**  
+**Method:** MIME-type bypass by changing `Content-Type` to `image/jpeg` in the request.
+**Result:** Successfully uploaded the PHP shell by tricking the server into thinking it was an image.
 **Screenshot:** ![File Upload Medium](screenshots/file_upload_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The application checks the `Content-Type` header sent by the browser to ensure it matches an allowed image type (e.g., image/jpeg or image/png).
+**Why it still worked:** Browser headers are entirely under the control of the user. By intercepting the request and modifying the MIME type, we bypass this client-side check.
 
 ---
 
 ### 🟢 High Security
-**Method:**  
-**Result:**  
+**Method:** File header bypass + Command Injection / File Inclusion to execute.
+**Result:** Blocked unless combined with other vulnerabilities.
 **Screenshot:** ![File Upload High](screenshots/file_upload_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** The server uses `getimagesize()` to check the actual file content, not just the extension or header. It effectively verifies that the file is a real image.
+**Why it still worked:** An attacker can append PHP code to a real image file. While it passes the image check, the PHP code can be executed if the attacker finds a way (like File Inclusion) to force the server to parse the image as PHP.
 
 ---
 
