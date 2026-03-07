@@ -4,17 +4,9 @@
 
 ---
 
-## Environment Setup
+## Setup Commands
 
-- **Docker Image:** `vulnerables/web-dvwa`
-- **Container Port:** `8080:80`
-- **Access URL:** `http://localhost:8080`
-- **Login:** `admin` / `password`
-
-```bash
-docker pull vulnerables/web-dvwa
-docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
-```
+Environment setup commands are in [`commands.md`](commands.md).
 
 ---
 
@@ -29,17 +21,17 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 7. [SQL Injection](#7-sql-injection)
 8. [SQL Injection (Blind)](#8-sql-injection-blind)
 9. [Weak Session IDs](#9-weak-session-ids)
-10. [XSS – DOM](#10-xss--dom)
-11. [XSS – Reflected](#11-xss--reflected)
-12. [XSS – Stored](#12-xss--stored)
-13. [JavaScript](#13-javascript)
-14. [CSP Bypass](#14-csp-bypass)
+10. [XSS (DOM)](#10-xss-dom)
+11. [XSS (Reflected)](#11-xss-reflected)
+12. [XSS (Stored)](#12-xss-stored)
+13. [CSP Bypass](#13-csp-bypass)
+14. [JavaScript](#14-javascript)
 
 ---
 
 ## 1. Brute Force
 
-### 🔴 Low Security
+### Low Security
 **Tool/Method:** Manual entry (simulating a dictionary attack).  
 **Result:** Successfully logged in using `admin` / `password`.  
 **Screenshot:** ![Brute Force Low](screenshots/bruteforce_low.png)  
@@ -47,7 +39,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Tool/Method:** Manual entry.  
 **Result:** Successful login, but failed attempts resulted in a noticeable delay.  
 **Screenshot:** ![Brute Force Medium](screenshots/bruteforce_med.png)  
@@ -56,7 +48,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟢 High Security
+### High Security
 **Tool/Method:** Manual entry.  
 **Result:** Successful login, but requires a unique CSRF token per attempt.  
 **Screenshot:** ![Brute Force High](screenshots/bruteforce_high.png)  
@@ -66,7 +58,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ## 2. Command Injection
 
-### 🔴 Low Security
+### Low Security
 **Payload:** `127.0.0.1; whoami; pwd; ls`  
 **Result:** Displays the ping results followed by the username `www-data`, the current directory `/var/www/html/vulnerabilities/exec`, and the list of files in that directory.  
 **Screenshot:** ![Command Injection Low](screenshots/command_injection_low.png)  
@@ -74,7 +66,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Payload:** `127.0.0.1 & ls`  
 **Result:** Displays the ping results, followed sequentially by the output of the `ls` command (which shows `help`, `index.php`, and `source`).  
 **Screenshot:** ![Command Injection Medium](screenshots/command_injection_med.png)  
@@ -83,7 +75,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟢 High Security
+### High Security
 **Payload:** `127.0.0.1 |ls` (Critical: **No space** after the pipe)  
 **Result:** Displays only the output of `ls` (`help`, `index.php`, `source`). The ping output is piped away.  
 **Screenshot:** ![Command Injection High](screenshots/command_injection_high.png)  
@@ -94,7 +86,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ## 3. CSRF
 
-### 🔴 Low Security
+### Low Security
 **Payload:** `http://localhost:8080/vulnerabilities/csrf/?password_new=hacked&password_conf=hacked&Change=Change`  
 **Result:** The admin password is changed to `hacked` without the user submitting the form — just by visiting the crafted URL.  
 **Screenshot:** ![CSRF Low](screenshots/csrf_low.png)  
@@ -102,7 +94,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Method:** Bypassing `Referer` check using Chrome DevTools `fetch` modification.
 **Result:** Password change is successful after modifying the Referer header to include "localhost".
 **Screenshot:** ![CSRF Medium](screenshots/csrf_med.png)  
@@ -111,7 +103,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟢 High Security
+### High Security
 **Method:** Required predictable CSRF token. Attempted direct URL injection.
 **Result:** Attack is blocked — each request requires a unique, unpredictable CSRF token tied to the user's session.
 **Screenshot:** ![CSRF High](screenshots/csrf_high.png)  
@@ -121,7 +113,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ## 4. File Inclusion
 
-### 🔴 Low Security
+### Low Security
 **Payload:** `?page=/etc/passwd`
 **Result:** Successfully read the server's `/etc/passwd` file, listing all system users.
 **Screenshot:** ![File Inclusion Low](screenshots/file_inclusion_low.png)  
@@ -129,7 +121,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Payload:** `?page=..././..././..././..././..././..././etc/passwd`
 **Result:** Successfully bypassed the `../` filter after 6 directory jumps to read `/etc/passwd`.
 **Screenshot:** ![File Inclusion Medium](screenshots/file_inclusion_med.png)  
@@ -138,7 +130,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟢 High Security
+### High Security
 **Payload:** `?page=file:///etc/passwd`
 **Result:** Successfully bypassed the "file" prefix requirement using the `file://` protocol.
 **Screenshot:** ![File Inclusion High](screenshots/file_inclusion_high.png)  
@@ -149,7 +141,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ## 5. File Upload
 
-### 🔴 Low Security
+### Low Security
 **Method:** Uploaded a simple PHP web shell (`shell.php`).
 **Result:** File was uploaded successfully, and server-side execution was achieved by visiting the uploaded file path.
 **Screenshot:** ![File Upload Low](screenshots/file_upload_low.png)  
@@ -157,7 +149,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Method:** MIME-type bypass by changing `Content-Type` to `image/jpeg` using a browser `fetch` command.
 **Result:** Successfully uploaded the PHP shell by tricking the server into thinking it was an image.
 **Screenshot:** ![File Upload Medium](screenshots/file_upload_med.png)  
@@ -166,7 +158,7 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 
 ---
 
-### 🟢 High Security
+### High Security
 **Method:** PNG Magic Bytes bypass + File Inclusion chaining.
 **Result:** Successfully uploaded a PHP shell hidden inside a valid PNG image and executed it via LFI.
 **Screenshot:** ![File Upload High](screenshots/file_upload_high.png)  
@@ -182,7 +174,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ## 6. Insecure CAPTCHA
 
-### 🔴 Low Security
+### Low Security
 **Method:** Bypassing Step 1 by sending the Step 2 POST request directly.
 **Result:** Successfully changed the password without ever solving the CAPTCHA.
 **Screenshot:** ![Insecure CAPTCHA Low](screenshots/captcha_low.png)  
@@ -190,7 +182,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Method:** Forging the `passed_captcha` parameter in the POST request.
 **Result:** Bypassed the CAPTCHA verification by adding `passed_captcha=true` to the request body.
 **Screenshot:** ![Insecure CAPTCHA Medium](screenshots/captcha_med.png)  
@@ -199,7 +191,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟢 High Security
+### High Security
 **Method:** Combined Parameter and User-Agent spoofing.
 **Result:** Successfully changed the password by emulating the internal reCAPTCHA verification response.
 **Screenshot:** ![Insecure CAPTCHA High](screenshots/captcha_high.png)  
@@ -210,7 +202,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ## 7. SQL Injection
 
-### 🔴 Low Security
+### Low Security
 **Payload:**
 ```sql
 1' OR '1'='1
@@ -221,7 +213,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Payload:** `1 OR 1=1` (sent via edited HTML value)  
 **Result:** Successfully dumped the database after bypassing the dropdown menu.  
 **Screenshot:** ![SQL Injection Medium](screenshots/sql_injection_med.png)  
@@ -230,7 +222,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟢 High Security
+### High Security
 **Payload:** `1' OR '1'='1` (entered in the popup window)  
 **Result:** Successfully dumped the database from a separate input window.  
 **Screenshot:** ![SQL Injection High](screenshots/sql_injection_high.png)  
@@ -240,27 +232,27 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ## 8. SQL Injection (Blind)
 
-### 🔴 Low Security
+### Low Security
 **Payload:** `1' AND 1=1 #` (True) vs `1' AND 1=2 #` (False)
 **Result:** Successfully confirmed the existence of User ID 1 by observing the change in response message.
-**Screenshot:** ![SQL Injection Blind Low](screenshots/sqli_blind_low.png)  
+**Screenshot:** ![SQL Injection Blind Low](screenshots/sql_injection_blind_low.png)  
 **Why it worked:** The input is not sanitized or parameterized. By injecting a boolean condition (`AND 1=1`), we can determine if the original query returned a row. If the page says "User ID exists", the condition was true. If it says "User ID is MISSING", the condition was false.
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Payload:** `1 AND 1=1` (True) vs `1 AND 1=2` (False)
 **Result:** Bypassed `mysqli_real_escape_string` by using numeric-based injection.
-**Screenshot:** ![SQL Injection Blind Medium](screenshots/sqli_blind_med.png)  
+**Screenshot:** ![SQL Injection Blind Medium](screenshots/sql_injection_blind_med.png)  
 **Why it was harder:** The application uses `mysqli_real_escape_string()` to escape quotes and uses a dropdown menu for input.  
 **Why it still worked:** Since the SQL query does not wrap the ID in quotes (`WHERE user_id = $id`), escaping quotes has no effect. By intercepting the POST request and changing the ID to a boolean expression, we can infer database data.
 
 ---
 
-### 🟢 High Security
+### High Security
 **Payload:** `1' AND 1=1 #` (True) vs `1' AND 1=2 #` (False)
 **Result:** Successfully exploited the vulnerability by modifying the `id` cookie.
-**Screenshot:** ![SQL Injection Blind High](screenshots/sqli_blind_high.png)  
+**Screenshot:** ![SQL Injection Blind High](screenshots/sql_injection_blind_high.png)  
 **Why it failed / mitigation used:** The application uses a separate page to set a cookie and includes a `sleep()` function to slow down brute-force/automated attacks.  
 **Why it still worked:** The security flaw is the same as the Low level (string concatenation in the query), just with a different input vector (cookies). By manually setting the cookie value to our payload, we bypass the intended input method.
 
@@ -268,7 +260,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ## 9. Weak Session IDs
 
-### 🔴 Low Security
+### Low Security
 **Method:** Observing incremental session ID values.
 **Result:** Successfully predicted the next session ID by observing the consecutive incrementing integers in the `dvwaSession` cookie.
 **Screenshot:** ![Weak Session IDs Low](screenshots/wsi_low.png)  
@@ -276,7 +268,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Method:** Identifying time-based session IDs.
 **Result:** Predicted session IDs by converting the cookie value to a Unix timestamp.
 **Screenshot:** ![Weak Session IDs Medium](screenshots/wsi_med.png)  
@@ -285,7 +277,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟢 High Security
+### High Security
 **Method:** Reversing MD5-hashed incremental IDs.
 **Result:** Successfully predicted the next hashed session ID by hashing the next expected integer in the sequence.
 **Screenshot:** ![Weak Session IDs High](screenshots/wsi_high.png)  
@@ -294,18 +286,18 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-## 10. XSS – DOM
+## 10. XSS (DOM)
 
-### 🔴 Low Security
-**Payload:** `?default=<script>alert('XSS')</script>`
+### Low Security
+**Payload:** `?default=<script>alert('Low_XSS')</script>`
 **Result:** Successfully executed the script, triggering an alert box.
 **Screenshot:** ![XSS DOM Low](screenshots/xss_dom_low.png)  
 **Why it worked:** The application reads the `default` parameter directly from the URL and uses it to update the DOM via `document.write`. There is no sanitization or encoding.
 
 ---
 
-### 🟡 Medium Security
-**Payload:** `?default=English</option></select><img src=x onerror=alert('XSS')>`
+### Medium Security
+**Payload:** `?default=English</option></select><img src=x onerror=alert('Medium_XSS')>`
 **Result:** Bypassed the server-side `<script` block by using an `img` tag event handler.
 **Screenshot:** ![XSS DOM Medium](screenshots/xss_dom_med.png)  
 **Why it was harder:** The server-side PHP code uses `stripos()` to check if the input contains `<script`. If it does, the request is redirected to the default page.
@@ -313,7 +305,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟢 High Security
+### High Security
 **Payload:** `?default=English#</option></select><img src=x onerror=alert('High_XSS')>`
 **Result:** **Success (Successfully bypassed after reload).**
 **Screenshot:** ![XSS DOM High](screenshots/xss_dom_high.png)  
@@ -325,18 +317,18 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-## 11. XSS – Reflected
+## 11. XSS (Reflected)
 
-### 🔴 Low Security
-**Payload:** `<script>alert('XSS')</script>`
+### Low Security
+**Payload:** `<script>alert('Low_XSS')</script>`
 **Result:** Successfully executed the script via the URL parameter.
 **Screenshot:** ![XSS Reflected Low](screenshots/xss_reflected_low.png)  
 **Why it worked:** The server-side script takes the `name` parameter from the GET request and echoes it directly into the HTML response inside `<pre>` tags without any sanitization or encoding.
 
 ---
 
-### 🟡 Medium Security
-**Payload:** `<sc<script>ript>alert('XSS')</script>`
+### Medium Security
+**Payload:** `<SCRIPT>alert('Medium_XSS')</SCRIPT>`
 **Result:** Bypassed the case-sensitive and non-recursive `str_replace` filter.
 **Screenshot:** ![XSS Reflected Medium](screenshots/xss_reflected_med.png)  
 **Why it was harder:** The application uses `str_replace( '<script>', '', ... )` to remove potential script tags.
@@ -344,8 +336,8 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟢 High Security
-**Payload:** `<img src=x onerror=alert('XSS')>`
+### High Security
+**Payload:** `<img src=x onerror=alert('High_XSS')>`
 **Result:** Bypassed the regex-based script tag filter by using an alternative HTML tag.
 **Screenshot:** ![XSS Reflected High](screenshots/xss_reflected_high.png)  
 **Why it failed / mitigation used:** The application uses a more robust regular expression `preg_replace()` that case-insensitively blocks any string following the pattern of a script tag.
@@ -353,27 +345,27 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-## 12. XSS – Stored
+## 12. XSS (Stored)
 
-### 🔴 Low Security
-**Payload:** `<script>alert('Stored XSS')</script>` (in the Message field)
+### Low Security
+**Payload:** `<script>alert('Low_Stored')</script>` (in the Message field)
 **Result:** Successfully stored the script; it triggers an alert every time the page is loaded.
 **Screenshot:** ![XSS Stored Low](screenshots/xss_stored_low.png)  
 **Why it worked:** The server accepts input from the guestbook form and saves it directly to the database without any tags being stripped or encoded. When the page renders the entries, the browser executes the script.
 
 ---
 
-### 🟡 Medium Security
-**Payload:** `<SCRIPT>alert('Stored XSS')</SCRIPT>` (in the Name field)
+### Medium Security
+**Payload:** `<SCRIPT>alert('Medium_Stored')</SCRIPT>` (in the Name field)
 **Result:** Bypassed the message-field sanitization by targeting the "Name" field with mixed-case tags.
-**Screenshot:** ![XSS Stored Medium](screenshots/xss_stored_med.png)  
+**Screenshot:** ![XSS Stored Medium](screenshots/xss_stored_medium.png)  
 **Why it was harder:** The "Message" field uses `strip_tags()`, making it very difficult to inject code. The "Name" field has a `maxlength` limit of 10 characters in the HTML.
 **Why it still worked:** I used DevTools to increase the `maxlength` of the "Name" input field. The backend only uses a case-sensitive `str_replace('<script>', ...)` on the name, which I bypassed by using uppercase tags.
 
 ---
 
-### 🟢 High Security
-**Payload:** `<img src=x onerror=alert('Stored XSS')>` (in the Name field)
+### High Security
+**Payload:** `<img src=x onerror=alert('High_Stored')>` (in the Name field)
 **Result:** Successfully bypassed the robust regex filter by using an `img` tag event handler in the "Name" field.
 **Screenshot:** ![XSS Stored High](screenshots/xss_stored_high.png)  
 **Why it failed / mitigation used:** The application uses a robust regex to block script tags in the "Name" field and `strip_tags()` in the "Message" field.
@@ -381,56 +373,9 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
+## 13. CSP Bypass
 
-## 15. JavaScript Attacks
-
-### 🔴 Low Security
-**Objective:** Pass the "success" phrase check by providing a valid token.  
-**Logic:** `token = md5(rot13(phrase))`  
-**Bypass:**  
-1. Type `success` in the input field.
-2. Open the console (F12) and run `generate_token()`.
-3. Click "Submit".
-**Result:** Successfully authenticated.
-**Screenshot:** ![JavaScript Low](screenshots/js_low.png)  
-**Why it worked:** The page uses client-side JavaScript to generate a token from a phrase. By manually triggering the generation function after entering the correct phrase, we satisfy the server's check.
-
----
-
-### 🟡 Medium Security
-**Logic:** `token = reverse("XX" + phrase + "XX")`  
-**Bypass:**  
-1. Type `success` in the input field.
-2. Open the console and run `do_elsesomething("XX")`.
-3. Click "Submit".
-**Result:** Successfully authenticated.
-**Screenshot:** ![JavaScript Medium](screenshots/js_med.png)  
-**Why it worked:** Similar to Low, but the logic is moved to an external script and involves a `setTimeout`. Manually calling the final step of the token generation ensures the token matches the new phrase.
-
----
-
-### 🟢 High Security
-**Logic:** A multi-stage SHA-256 process:
-1. `part1 = reverse(phrase)`
-2. `part2 = sha256("XX" + part1)`
-3. `part3 = sha256(part2 + "ZZ")` (triggers on click)  
-**Bypass:**  
-1. Type `success` in the input field.
-2. Open the console and run:
-   ```javascript
-   token_part_1("ABCD", 44);
-   token_part_2("XX");
-   ```
-3. Click "Submit".
-**Result:** Successfully authenticated.
-**Screenshot:** ![JavaScript High](screenshots/js_high.png)  
-**Why it worked:** The High level uses heavy obfuscation and timing/event-based triggers. By manually walking through the first two parts of the algorithm in the console, we prepare the correct intermediate state for the final part that triggers upon clicking "Submit".
-
----
-
-## 14. CSP Bypass
-
-### 🔴 Low Security
+### Low Security
 **Payload:** `source/jsonp.php?callback=alert`
 **Result:** Successfully triggered an alert box (showing `[object Object]`).
 **Screenshot:** ![CSP Bypass Low](screenshots/csp_low.png)  
@@ -441,7 +386,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟡 Medium Security
+### Medium Security
 **Method:** Exploiting a static, predictable nonce.
 **Payload:** `<script nonce="TmV2ZXIgZ29pbmcgdG8gZ2l2ZSB5b3UgdXA=">alert('Medium_CSP_Bypass')</script>`
 **Result:** Successfully executed an inline script by providing the correct nonce.
@@ -451,7 +396,7 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-### 🟢 High Security
+### High Security
 **Payload (Browser Console):**
 ```javascript
 var f = document.createElement('form');
@@ -471,6 +416,52 @@ f.submit();
 - **Hidden Vulnerability:** Despite the missing UI, the backend PHP code (`high.php`) still processes the `POST['include']` parameter. 
 - **Console Injection:** By using the browser console to inject and submit a hidden form, we can force the payload into the page.
 - **Trusting 'self':** Since the injected `<script>` tag points to a local file (`source/jsonp.php`), it satisfies the strict `'self'` policy. Using `alert` as the callback triggers the execution.
+
+---
+
+## 14. JavaScript
+
+### Low Security
+**Objective:** Pass the "success" phrase check by providing a valid token.  
+**Logic:** `token = md5(rot13(phrase))`  
+**Bypass:**  
+1. Type `success` in the input field.
+2. Open the console (F12) and run `generate_token()`.
+3. Click "Submit".
+**Result:** Successfully authenticated.
+**Screenshot:** ![JavaScript Low](screenshots/js_low.png)  
+**Why it worked:** The page uses client-side JavaScript to generate a token from a phrase. By manually triggering the generation function after entering the correct phrase, we satisfy the server's check.
+
+---
+
+### Medium Security
+**Logic:** `token = reverse("XX" + phrase + "XX")`  
+**Bypass:**  
+1. Type `success` in the input field.
+2. Open the console and run `do_elsesomething("XX")`.
+3. Click "Submit".
+**Result:** Successfully authenticated.
+**Screenshot:** ![JavaScript Medium](screenshots/js_med.png)  
+**Why it worked:** Similar to Low, but the logic is moved to an external script and involves a `setTimeout`. Manually calling the final step of the token generation ensures the token matches the new phrase.
+
+---
+
+### High Security
+**Logic:** A multi-stage SHA-256 process:
+1. `part1 = reverse(phrase)`
+2. `part2 = sha256("XX" + part1)`
+3. `part3 = sha256(part2 + "ZZ")` (triggers on click)  
+**Bypass:**  
+1. Type `success` in the input field.
+2. Open the console and run:
+   ```javascript
+   token_part_1("ABCD", 44);
+   token_part_2("QX");
+   ```
+3. Click "Submit".
+**Result:** Successfully authenticated.
+**Screenshot:** ![JavaScript High](screenshots/js_high.png)  
+**Why it worked:** The High level uses heavy obfuscation and timing/event-based triggers. By manually walking through the first two parts of the algorithm in the console, we prepare the correct intermediate state for the final part that triggers upon clicking "Submit".
 
 ---
 
