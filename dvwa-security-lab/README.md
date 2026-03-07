@@ -297,29 +297,30 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 ## 10. XSS – DOM
 
 ### 🔴 Low Security
-**Payload:**
-```html
-<script>alert('DOM XSS')</script>
-```
-**Result:**  
+**Payload:** `?default=<script>alert('XSS')</script>`
+**Result:** Successfully executed the script, triggering an alert box.
 **Screenshot:** ![XSS DOM Low](screenshots/xss_dom_low.png)  
-**Why it worked:**  
+**Why it worked:** The application reads the `default` parameter directly from the URL and uses it to update the DOM via `document.write`. There is no sanitization or encoding.
 
 ---
 
 ### 🟡 Medium Security
-**Payload:**  
-**Result:**  
+**Payload:** `?default=English</option></select><img src=x onerror=alert('XSS')>`
+**Result:** Bypassed the server-side `<script` block by using an `img` tag event handler.
 **Screenshot:** ![XSS DOM Medium](screenshots/xss_dom_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The server-side PHP code uses `stripos()` to check if the input contains `<script`. If it does, the request is redirected to the default page.
+**Why it still worked:** The protection only looks for a specific tag. By using different tags or event handlers like `onerror` or `onload`, the filter is bypassed while still achieving script execution in the DOM.
 
 ---
 
 ### 🟢 High Security
-**Payload:**  
-**Result:**  
+**Payload:** `?default=English#</option></select><script>alert(1)</script>`
+**Result:** **Attack Blocked / Failed.**
 **Screenshot:** ![XSS DOM High](screenshots/xss_dom_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** 
+1. **Server-Side Whitelist:** The PHP code uses a strict `switch` statement that only allows four specific language names ("English", "French", etc.). Any other value causes an immediate redirect, preventing the payload from reaching the page via a standard query parameter.
+2. **Client-Side Confinement:** Even when attempting to use a "Fragment Identifier" (`#`) to sneak the payload past the server, the client-side JavaScript injects the value directly into the `value` attribute of an `<option>` tag. Modern browsers often treat this as a string rather than executable code, and the strict tag confinement inside the `<select>` block prevents the breakout from triggering an execution context like an alert.
+3. **Browser Protections:** Modern browser XSS filters and sanitization during `document.write` for sensitive tags like `<script>` further mitigate the risk.
 
 ---
 
