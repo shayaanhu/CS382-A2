@@ -122,26 +122,28 @@ docker run -d --name dvwa -p 8080:80 vulnerables/web-dvwa
 ## 4. File Inclusion
 
 ### 🔴 Low Security
-**Payload:**  
-**Result:**  
+**Payload:** `?page=/etc/passwd`
+**Result:** Successfully read the server's `/etc/passwd` file, listing all system users.
 **Screenshot:** ![File Inclusion Low](screenshots/file_inclusion_low.png)  
-**Why it worked:**  
+**Why it worked:** The PHP `include()` function is used without any validation. It blindly accepts whatever string is passed in the `page` parameter and attempts to open it as a file.
 
 ---
 
 ### 🟡 Medium Security
-**Payload:**  
-**Result:**  
+**Payload:** `?page=..././..././..././etc/passwd`
+**Result:** Successfully bypassed the `../` filter to read `/etc/passwd`.
 **Screenshot:** ![File Inclusion Medium](screenshots/file_inclusion_med.png)  
-**Why it was harder:**  
+**Why it was harder:** The developer implemented a filter to remove `../` and `..\` sequences to prevent directory traversal.
+**Why it still worked:** The replacement only happens once. By inputting `..././`, the filter removes the inner `../`, leaving behind a valid `../` sequence that the server then processes.
 
 ---
 
 ### 🟢 High Security
-**Payload:**  
-**Result:**  
+**Payload:** `?page=file:///etc/passwd`
+**Result:** Successfully bypassed the "file" prefix requirement using the `file://` protocol.
 **Screenshot:** ![File Inclusion High](screenshots/file_inclusion_high.png)  
-**Why it failed / mitigation used:**  
+**Why it failed / mitigation used:** The server implements a strict check where the input MUST start with the word "file". This is intended to whitelist only specific files.
+**Why it still worked:** Using the `file:///` URI scheme satisfies the "starts with file" condition while still allowing us to point to any location on the local filesystem.
 
 ---
 
