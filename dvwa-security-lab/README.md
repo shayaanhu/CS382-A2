@@ -381,29 +381,50 @@ The server accepted `shell.png` as a valid image. I then executed the code by ch
 
 ---
 
-## 13. JavaScript
+
+## 15. JavaScript Attacks
 
 ### 🔴 Low Security
-**Method:**  
-**Result:**  
-**Screenshot:** ![JavaScript Low](screenshots/javascript_low.png)  
-**Why it worked:**  
+**Objective:** Pass the "success" phrase check by providing a valid token.  
+**Logic:** `token = md5(rot13(phrase))`  
+**Bypass:**  
+1. Type `success` in the input field.
+2. Open the console (F12) and run `generate_token()`.
+3. Click "Submit".
+**Result:** Successfully authenticated.
+**Screenshot:** ![JavaScript Low](screenshots/js_low.png)  
+**Why it worked:** The page uses client-side JavaScript to generate a token from a phrase. By manually triggering the generation function after entering the correct phrase, we satisfy the server's check.
 
 ---
 
 ### 🟡 Medium Security
-**Method:**  
-**Result:**  
-**Screenshot:** ![JavaScript Medium](screenshots/javascript_med.png)  
-**Why it was harder:**  
+**Logic:** `token = reverse("XX" + phrase + "XX")`  
+**Bypass:**  
+1. Type `success` in the input field.
+2. Open the console and run `do_elsesomething("XX")`.
+3. Click "Submit".
+**Result:** Successfully authenticated.
+**Screenshot:** ![JavaScript Medium](screenshots/js_med.png)  
+**Why it worked:** Similar to Low, but the logic is moved to an external script and involves a `setTimeout`. Manually calling the final step of the token generation ensures the token matches the new phrase.
 
 ---
 
 ### 🟢 High Security
-**Method:**  
-**Result:**  
-**Screenshot:** ![JavaScript High](screenshots/javascript_high.png)  
-**Why it failed / mitigation used:**  
+**Logic:** A multi-stage SHA-256 process:
+1. `part1 = reverse(phrase)`
+2. `part2 = sha256("XX" + part1)`
+3. `part3 = sha256(part2 + "ZZ")` (triggers on click)  
+**Bypass:**  
+1. Type `success` in the input field.
+2. Open the console and run:
+   ```javascript
+   token_part_1("ABCD", 44);
+   token_part_2("XX");
+   ```
+3. Click "Submit".
+**Result:** Successfully authenticated.
+**Screenshot:** ![JavaScript High](screenshots/js_high.png)  
+**Why it worked:** The High level uses heavy obfuscation and timing/event-based triggers. By manually walking through the first two parts of the algorithm in the console, we prepare the correct intermediate state for the final part that triggers upon clicking "Submit".
 
 ---
 
