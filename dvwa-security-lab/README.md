@@ -41,7 +41,7 @@ All the environment setup commands are in [`commands.md`](commands.md).
 **Tool/Method:** Manual entry (basically simulating a dictionary attack).  
 **Result:** Logged in with `admin` / `password`.  
 **Screenshot:** ![Brute Force Low](screenshots/bruteforce_low.png)  
-**Why it worked:** There's nothing stopping you on the server side. No lockout, no delay—you can just keep guessing as fast as you want.
+**Why it worked:** There's nothing stopping you on the server side. No lockout, no delay. You can just keep guessing as fast as you want.
 
 ---
 
@@ -66,7 +66,7 @@ All the environment setup commands are in [`commands.md`](commands.md).
 
 ### Low Security
 **Payload:** `127.0.0.1; whoami; pwd; ls`  
-**Result:** Got the ping output plus our injected commands—showed the username `www-data`, working directory `/var/www/html/vulnerabilities/exec`, and the files there.  
+**Result:** Got the ping output plus our injected commands. Showed the username `www-data`, working directory `/var/www/html/vulnerabilities/exec`, and the files there.  
 **Screenshot:** ![Command Injection Low](screenshots/command_injection_low.png)  
 **Why it worked:** The app just hands whatever you type straight to `shell_exec()`. Using `;` lets us end the ping command and run our own stuff after it.
 
@@ -82,7 +82,7 @@ All the environment setup commands are in [`commands.md`](commands.md).
 ---
 
 ### High Security
-**Payload:** `127.0.0.1 |ls` (no space after the pipe—this is important)  
+**Payload:** `127.0.0.1 |ls` (no space after the pipe, this is important)  
 **Result:** Just the `ls` output (`help`, `index.php`, `source`). The ping output gets piped away.  
 **Screenshot:** ![Command Injection High](screenshots/command_injection_high.png)  
 **Why it failed / mitigation:** The blacklist was expanded to include `&`, `;`, `|`, `-`, `$`, etc. But there's a mistake in the code: they filtered `'| '` (pipe + space) instead of just `'|'`.  
@@ -94,7 +94,7 @@ All the environment setup commands are in [`commands.md`](commands.md).
 
 ### Low Security
 **Payload:** `http://localhost:8080/vulnerabilities/csrf/?password_new=hacked&password_conf=hacked&Change=Change`  
-**Result:** Just visiting this URL changed the admin password to `hacked`—no form submission needed.  
+**Result:** Just visiting this URL changed the admin password to `hacked`, without any form submission.  
 **Screenshot:** ![CSRF Low](screenshots/csrf_low.png)  
 **Why it worked:** The app processes GET parameters with the session cookie and doesn't check if the request actually came from the form. So anyone can craft a URL that changes the password.
 
@@ -111,7 +111,7 @@ All the environment setup commands are in [`commands.md`](commands.md).
 
 ### High Security
 **Method:** Tried direct URL injection.  
-**Result:** Blocked—every request needs a unique CSRF token tied to the session.  
+**Result:** Blocked. Every request needs a unique CSRF token tied to the session.  
 **Screenshot:** ![CSRF High](screenshots/csrf_high.png)  
 **Why it failed / mitigation:** The server generates a unique `user_token` on each page load, tied to the session. Without scraping the page first to get this hidden token, any forged request gets rejected.
 
@@ -223,7 +223,7 @@ The server accepted `shell.png` as a valid image. Then I ran the code by chainin
 **Payload:** `1 OR 1=1` (edited the HTML dropdown value)  
 **Result:** Dumped the database after getting around the dropdown menu.  
 **Screenshot:** ![SQL Injection Medium](screenshots/sql_injection_med.png)  
-**Why it was harder:** There's no text input—just a dropdown. Plus the code uses `mysql_real_escape_string()` to escape single quotes.  
+**Why it was harder:** There's no text input, just a dropdown. Plus the code uses `mysql_real_escape_string()` to escape single quotes.  
 **Why it still worked:** I used Inspect Element to change the dropdown option value to my SQL payload. Because the developer forgot to wrap `$id` in quotes in the query (i.e. `WHERE user_id = $id`), escaping quotes doesn't matter for numeric injection.
 
 ---
@@ -260,7 +260,7 @@ The server accepted `shell.png` as a valid image. Then I ran the code by chainin
 **Result:** Exploited it by modifying the `id` cookie.  
 **Screenshot:** ![SQL Injection Blind High](screenshots/sql_injection_blind_high.png)  
 **Why it failed / mitigation:** The input is now taken from a cookie set on a separate page, and there's a `sleep()` to slow down automated tools.  
-**Why it still worked:** The core flaw is the same—string concatenation in the query. It's just a different input vector (cookies instead of a form). Setting the cookie value to the payload bypasses the intended input method.
+**Why it still worked:** The core flaw is the same: string concatenation in the query. It's just a different input vector (cookies instead of a form). Setting the cookie value to the payload bypasses the intended input method.
 
 ---
 
@@ -285,10 +285,10 @@ The server accepted `shell.png` as a valid image. Then I ran the code by chainin
 
 ### High Security
 **Method:** Checked if the IDs were MD5 hashes of something predictable.  
-**Result:** They were—MD5 hashes of incrementing integers.  
+**Result:** Yes, they were MD5 hashes of incrementing integers.  
 **Screenshot:** ![Weak Session IDs High](screenshots/wsi_high.png)  
 **Why it failed / mitigation:** The session ID looks like a random MD5 hash, so it's not obvious what's behind it.  
-**Why it still worked:** The underlying value is still just a counter (`md5(count++)`). Hashing something predictable doesn't make it secure—it's just obfuscation.
+**Why it still worked:** The underlying value is still just a counter (`md5(count++)`). Hashing something predictable doesn't make it secure. It's just obfuscation.
 
 ---
 
@@ -417,7 +417,7 @@ f.submit();
 ```
 **Result:** Code ran by pointing to the `jsonp.php` file on the same origin through a hidden form.  
 **Screenshot:** ![CSP Bypass High](screenshots/csp_high.png)  
-**Why it failed / mitigation:** The CSP only allows scripts from `'self'`, and the UI doesn't have an input field anymore—so there's no obvious way to inject anything.  
+**Why it failed / mitigation:** The CSP only allows scripts from `'self'`, and the UI doesn't have an input field anymore, so there's no obvious way to inject anything directly.  
 **Why it still worked:**  
 - The backend PHP still processes the `POST['include']` parameter even though there's no UI for it.
 - Using the console to create and submit a hidden form gets the payload in.
@@ -668,8 +668,8 @@ No. HTTPS only encrypts data in transit between the client and server. It does n
 - `bonus/certs/` (generated cert and key)
 
 **Container setup:**
-- `dvwa-backend` — runs DVWA, internal network only, no host port
-- `dvwa-nginx-proxy` — Nginx reverse proxy
+- `dvwa-backend`: runs DVWA on the internal network only, no host port exposed
+- `dvwa-nginx-proxy`: Nginx reverse proxy
   - HTTP: `http://localhost:8081`
   - HTTPS: `https://localhost:8443`
 
@@ -717,7 +717,7 @@ Server: nginx/1.27.5
 ...
 ```
 
-### HTTP vs HTTPS — What's the Difference?
+### HTTP vs HTTPS: What's the Difference?
 
 Ran verbose curl requests to see the difference:
 
@@ -727,13 +727,13 @@ curl -vk https://localhost:8443/login.php -o NUL
 ```
 
 What I saw:
-- The HTTP request just sends the data directly—no TLS handshake, nothing.
+- The HTTP request just sends the data directly. No TLS handshake at all.
 - The HTTPS request does a TLS negotiation first before sending any HTTP data.
 - HTTPS needed the `-k` flag because the cert is self-signed and not trusted by default.
 
 What this means:
 - **HTTP:** Anyone on the network can read or modify the traffic. No encryption at all.
 - **HTTPS:** Traffic is encrypted and integrity-protected, so credentials and cookies are safe from passive interception.
-- **Important:** HTTPS does NOT fix server-side bugs like SQLi, XSS, or command injection—it only protects data in transit.
+- **Important:** HTTPS does NOT fix server-side bugs like SQLi, XSS, or command injection. It only protects data in transit.
 
 ---
