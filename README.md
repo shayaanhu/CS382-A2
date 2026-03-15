@@ -1,5 +1,8 @@
 # CS382-A2
 
+**Name:** Muhammad Shayaan Qazi  
+**Student ID:** ms08066  
+
 Application Security Testing assignment for CS382 (DVWA lab).
 
 ## Report Location

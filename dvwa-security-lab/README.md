@@ -1,5 +1,7 @@
 # DVWA Security Lab Report
 **Course:** CS382 – Cybersecurity  
+**Name:** Muhammad Shayaan Qazi  
+**Student ID:** ms08066  
 **Tool:** Damn Vulnerable Web Application (DVWA) via Docker  
 
 ---
@@ -58,7 +60,7 @@ All the environment setup commands are in [`commands.md`](commands.md).
 **Tool/Method:** Manual entry.  
 **Result:** Logged in, but each attempt needs a unique CSRF token.  
 **Screenshot:** ![Brute Force High](screenshots/bruteforce_high.png)  
-**Why it failed / mitigation:** At this level there's both a CSRF token (anti-automation token) and a random `sleep()` delay. The token has to be scraped from the login page each time and sent along with the credentials, which breaks simple automated scripts. The random delay also makes response times unpredictable.
+**Why it failed / mitigation:** At this level there's both a CSRF token (anti-automation token) and a random `sleep()` delay. You'd have to scrape the login page each time just to get the token, which most basic scripts can't do. The random delay makes timing-based attacks harder too.
 
 ---
 
@@ -86,7 +88,7 @@ All the environment setup commands are in [`commands.md`](commands.md).
 **Result:** Just the `ls` output (`help`, `index.php`, `source`). The ping output gets piped away.  
 **Screenshot:** ![Command Injection High](screenshots/command_injection_high.png)  
 **Why it failed / mitigation:** The blacklist was expanded to include `&`, `;`, `|`, `-`, `$`, etc. But there's a mistake in the code: they filtered `'| '` (pipe + space) instead of just `'|'`.  
-**Why it still worked:** If you don't put a space after the pipe, the filter misses it. This shows how hard it is to get blacklisting right.
+**Why it still worked:** If you don't put a space after the pipe, the filter misses it. Basically, blacklists are really easy to get wrong.
 
 ---
 
